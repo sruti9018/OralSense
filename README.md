@@ -22,7 +22,7 @@ Risk classes:
 
 <details>
 <summary><b>📁 Project structure</b></summary>
-<pre>
+
 oral_cancer_ai/
 │
 ├── app.py                    # Flask backend API
@@ -59,7 +59,7 @@ oral_cancer_ai/
     ├── gradcam_results.png
     ├── multimodal_confusion_matrix.png
     └── project_report.pdf
-</pre>
+
 </details>
 
 📦 Dataset
