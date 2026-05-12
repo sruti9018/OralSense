@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OralSense — Patient History</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --blue-deep:#0a2463; --blue-mid:#1e5fa8; --blue-light:#3a86d4;
+    --blue-pale:#ddeeff; --blue-bg:#f0f6ff; --white:#ffffff;
+    --gray-50:#f8fafc; --gray-100:#eef2f7; --gray-200:#d8e2ef;
+    --gray-400:#8fa3be; --gray-600:#4a6080; --gray-700:#334d6e; --gray-800:#1e3050;
+    --green:#0d9e6e; --amber:#d97706; --orange:#ea6a1a; --red:#c0392b;
+    --shadow-sm:0 1px 3px rgba(10,36,99,0.08); --shadow-md:0 4px 16px rgba(10,36,99,0.10);
+    --radius:10px; --radius-lg:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--blue-bg);color:var(--gray-800);min-height:100vh}
+
+  header{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:100}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--blue-mid),var(--blue-deep));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .logo-name{font-family:'DM Serif Display',serif;font-size:20px;color:var(--blue-deep)}
+  .logo-sub{font-size:10px;color:var(--gray-400);letter-spacing:0.8px;text-transform:uppercase;margin-top:2px}
+  .back-btn{padding:8px 18px;background:var(--blue-pale);color:var(--blue-mid);border:1px solid #b8d4f0;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:flex;align-items:center;gap:6px}
+  .back-btn:hover{background:var(--blue-mid);color:white}
+
+  main{max-width:1280px;margin:0 auto;padding:32px 40px}
+
+  .patient-selector{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;box-shadow:var(--shadow-sm)}
+  .selector-title{font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.9px;margin-bottom:14px}
+  .search-row{display:flex;gap:12px;margin-bottom:16px}
+  .search-input{flex:1;padding:10px 14px;border:1px solid var(--gray-200);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--gray-800);background:var(--gray-50);outline:none}
+  .search-input:focus{border-color:var(--blue-light);background:white}
+  .patient-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-height:200px;overflow-y:auto}
+  .patient-card{padding:12px 14px;border:1px solid var(--gray-200);border-radius:var(--radius);cursor:pointer;transition:all 0.15s;background:var(--gray-50)}
+  .patient-card:hover{border-color:var(--blue-light);background:var(--blue-pale)}
+  .patient-card.selected{border-color:var(--blue-mid);background:var(--blue-pale)}
+  .pc-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray-400);margin-bottom:3px}
+  .pc-name{font-size:13px;font-weight:600;color:var(--gray-800);margin-bottom:4px}
+  .pc-meta{font-size:11px;color:var(--gray-400);display:flex;justify-content:space-between}
+  .risk-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+
+  .history-panel{display:none}
+  .history-panel.show{display:block}
+
+  .patient-banner{background:linear-gradient(135deg,var(--blue-deep),var(--blue-mid));border-radius:var(--radius-lg);padding:24px 30px;color:white;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+  .pb-left{display:flex;align-items:center;gap:16px}
+  .pb-avatar{width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,0.3)}
+  .pb-name{font-family:'DM Serif Display',serif;font-size:22px;color:white}
+  .pb-meta{font-size:12px;color:rgba(255,255,255,0.6);margin-top:3px}
+  .pb-stats{display:flex;gap:24px}
+  .pb-stat{text-align:center}
+  .pb-stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;color:white;font-weight:500}
+  .pb-stat-label{font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+
+  .alert-banner{background:#fef2f2;border:1px solid #fecaca;border-left:4px solid var(--red);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:none;align-items:center;gap:12px}
+  .alert-banner.show{display:flex}
+  .alert-text{font-size:13px;color:#991b1b;font-weight:500}
+  .alert-sub{font-size:11px;color:#b91c1c;margin-top:2px}
+
+  .history-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+  .full-width{grid-column:1/-1}
+
+  .card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+  .card-header{padding:14px 20px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;gap:8px}
+  .card-header-icon{width:28px;height:28px;border-radius:7px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .card-title{font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.9px}
+  .card-body{padding:20px}
+
+  .timeline{display:flex;flex-direction:column;gap:0}
+  .tl-item{display:flex;gap:16px;position:relative}
+  .tl-item:not(:last-child)::before{content:'';position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--gray-200)}
+  .tl-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1;border:2px solid white;box-shadow:0 0 0 2px var(--gray-200)}
+  .tl-body{flex:1;padding-bottom:20px}
+  .tl-date{font-size:10px;color:var(--gray-400);font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+  .tl-class{font-family:'DM Serif Display',serif;font-size:17px;line-height:1}
+  .tl-conf{font-size:11px;color:var(--gray-400);font-family:'JetBrains Mono',monospace;margin-top:2px}
+  .tl-alert{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;background:#fee2e2;color:#991b1b}
+  .tl-improve{background:#dcfce7;color:#166534}
+  .tl-habits{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .tl-chip{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+  .tl-chip.on{background:#fee2e2;color:#991b1b}
+  .tl-chip.off{background:#f0fdf4;color:#166534}
+
+  .habit-timeline{display:grid;gap:10px}
+  .habit-row{display:flex;align-items:center;gap:10px}
+  .habit-name{font-size:12px;font-weight:500;color:var(--gray-600);width:120px;flex-shrink:0}
+  .habit-dots{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+  .habit-dot-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .habit-dot-circle{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px}
+  .habit-dot-circle.on{background:#fee2e2;color:#991b1b}
+  .habit-dot-circle.off{background:#f0fdf4;color:#166534}
+  .habit-dot-date{font-size:9px;color:var(--gray-400);font-family:'JetBrains Mono',monospace}
+
+  .gradcam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .gradcam-item{border:1px solid var(--gray-200);border-radius:var(--radius);overflow:hidden}
+  .gradcam-img{width:100%;height:120px;object-fit:cover;display:block}
+  .gradcam-label{padding:8px 10px;background:var(--gray-50);border-top:1px solid var(--gray-100)}
+  .gradcam-date{font-size:10px;color:var(--gray-400);font-family:'JetBrains Mono',monospace}
+  .gradcam-class{font-size:12px;font-weight:600;margin-top:2px}
+
+  .no-data{text-align:center;padding:40px;color:var(--gray-400);font-size:13px}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .fade-in{animation:fadeIn 0.4s ease}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🦷</div>
+    <div>
+      <div class="logo-name">OralSense</div>
+      <div class="logo-sub">Patient History</div>
+    </div>
+  </div>
+  <a href="javascript:history.back()" class="back-btn">← Back to Analysis</a>
+</header>
+
+<main>
+
+  <div class="patient-selector">
+    <div class="selector-title">📋 Select Patient</div>
+    <div class="search-row">
+      <input class="search-input" id="searchInput" placeholder="Search by name or Patient ID…" oninput="filterPatients()">
+    </div>
+    <div class="patient-grid" id="patientGrid">
+      <div class="no-data">Loading patients…</div>
+    </div>
+  </div>
+
+  <div class="history-panel" id="historyPanel">
+
+    <div class="alert-banner" id="alertBanner">
+      <span style="font-size:20px">🔴</span>
+      <div>
+        <div class="alert-text" id="alertText">Risk level has increased since last visit!</div>
+        <div class="alert-sub" id="alertSub">Immediate clinical review recommended.</div>
+      </div>
+    </div>
+
+    <div class="patient-banner" id="patientBanner"></div>
+
+    <div class="history-grid">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">📈</div>
+          <span class="card-title">Risk Progression Over Time</span>
+        </div>
+        <div class="card-body">
+          <canvas id="riskChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">🕐</div>
+          <span class="card-title">Visit Timeline</span>
+        </div>
+        <div class="card-body">
+          <div class="timeline" id="visitTimeline"></div>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <div class="card-header">
+          <div class="card-header-icon">🚬</div>
+          <span class="card-title">Habit Change Tracking</span>
+        </div>
+        <div class="card-body">
+          <div class="habit-timeline" id="habitTimeline"></div>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <div class="card-header">
+          <div class="card-header-icon">🔥</div>
+          <span class="card-title">Grad-CAM Comparison Across Visits</span>
+        </div>
+        <div class="card-body">
+          <div class="gradcam-grid" id="gradcamGrid"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const API = 'http://127.0.0.1:5000';
+  let allPatients = [];
+  let riskChartInstance = null;
+
+  const riskColors = { normal:'#0d9e6e', low:'#d97706', medium:'#ea6a1a', high:'#c0392b' };
+  const riskOrder  = { normal:0, low:1, medium:2, high:3 };
+  const riskLabels = { normal:'Normal', low:'Variations', medium:'OPMD', high:'OC' };
+  const riskEmoji  = { normal:'✅', low:'⚠️', medium:'🔶', high:'🔴' };
+
+  async function loadPatients() {
+    try {
+      const res  = await fetch(`${API}/patients`);
+      const data = await res.json();
+      allPatients = data.patients || [];
+      renderPatientGrid(allPatients);
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('pid')) loadHistory(params.get('pid'));
+    } catch(e) {
+      document.getElementById('patientGrid').innerHTML = '<div class="no-data">⚠️ Cannot connect to server. Make sure app.py is running.</div>';
+    }
+  }
+
+  function filterPatients() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    renderPatientGrid(allPatients.filter(p =>
+      (p.name||'').toLowerCase().includes(q) || (p.patient_id||'').toLowerCase().includes(q)
+    ));
+  }
+
+  function renderPatientGrid(patients) {
+    const grid = document.getElementById('patientGrid');
+    if (!patients.length) { grid.innerHTML = '<div class="no-data">No patients found.</div>'; return; }
+    grid.innerHTML = patients.map(p => `
+      <div class="patient-card" onclick="loadHistory('${p.patient_id}')" id="pc-${p.patient_id}">
+        <div class="pc-id">${p.patient_id}</div>
+        <div class="pc-name">${p.name || '—'}</div>
+        <div class="pc-meta">
+          <span>${p.scan_count} visit${p.scan_count!==1?'s':''}</span>
+          <span><span class="risk-dot" style="background:${riskColors[p.latest_risk]||'#8fa3be'}"></span>${p.latest_risk||'—'}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function loadHistory(pid) {
+    document.querySelectorAll('.patient-card').forEach(c => c.classList.remove('selected'));
+    const card = document.getElementById('pc-' + pid);
+    if (card) card.classList.add('selected');
+
+    try {
+      const res  = await fetch(`${API}/patient_history/${pid}`);
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+
+      const { patient, scans } = data;
+      document.getElementById('historyPanel').className = 'history-panel show fade-in';
+
+      renderPatientBanner(patient, scans);
+      renderAlert(scans);
+      renderRiskChart(scans);
+      renderVisitTimeline(scans);
+      renderHabitTracker(scans);
+      renderGradcamGrid(scans);
+    } catch(e) {
+      alert('Could not load patient history. Make sure app.py is running.');
+    }
+  }
+
+  function renderPatientBanner(patient, scans) {
+    const latest    = scans[scans.length - 1];
+    const rk        = latest ? latest.risk_key : 'normal';
+    const riskCount = scans.filter(s => s.risk_key === 'high').length;
+    document.getElementById('patientBanner').innerHTML = `
+      <div class="pb-left">
+        <div class="pb-avatar">👤</div>
+        <div>
+          <div class="pb-name">${patient.name || '—'}</div>
+          <div class="pb-meta">${patient.patient_id} · ${patient.age ? patient.age+' yrs' : '—'} · ${patient.sex || '—'} · ${patient.phone || '—'}</div>
+          <div class="pb-meta" style="margin-top:4px">${patient.address || '—'}</div>
+        </div>
+      </div>
+      <div class="pb-stats">
+        <div class="pb-stat"><div class="pb-stat-val">${scans.length}</div><div class="pb-stat-label">Total Visits</div></div>
+        <div class="pb-stat"><div class="pb-stat-val" style="color:${riskColors[rk]||'white'}">${latest ? latest.multi_class : '—'}</div><div class="pb-stat-label">Latest Risk</div></div>
+        <div class="pb-stat"><div class="pb-stat-val" style="color:${riskCount>0?'#fca5a5':'#86efac'}">${riskCount}</div><div class="pb-stat-label">High Risk Visits</div></div>
+      </div>`;
+  }
+
+  function renderAlert(scans) {
+    const banner = document.getElementById('alertBanner');
+    if (scans.length < 2) { banner.classList.remove('show'); return; }
+    const last = scans[scans.length - 1];
+    const prev = scans[scans.length - 2];
+    if (last.risk_increased) {
+      banner.classList.add('show');
+      document.getElementById('alertText').textContent =
+        `⚠️ Risk increased from ${riskLabels[prev.risk_key]} → ${riskLabels[last.risk_key]} since last visit (${prev.scan_date})`;
+      document.getElementById('alertSub').textContent =
+        'Immediate clinical review and specialist referral recommended.';
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  function renderRiskChart(scans) {
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    if (riskChartInstance) riskChartInstance.destroy();
+    const labels = scans.map(s => s.scan_date || s.created_at.slice(0,10));
+    const values = scans.map(s => riskOrder[s.risk_key] || 0);
+    const colors = scans.map(s => riskColors[s.risk_key] || '#8fa3be');
+    riskChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Risk Level',
+          data: values,
+          borderColor: '#1e5fa8',
+          backgroundColor: 'rgba(30,95,168,0.08)',
+          pointBackgroundColor: colors,
+          pointBorderColor: colors,
+          pointRadius: 7,
+          pointHoverRadius: 9,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            min: -0.2, max: 3.2,
+            ticks: { stepSize:1, callback: v => ['Normal','Variations','OPMD','OC'][v]||'' },
+            grid: { color: '#eef2f7' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderVisitTimeline(scans) {
+    const tl = document.getElementById('visitTimeline');
+    if (!scans.length) { tl.innerHTML = '<div class="no-data">No visits yet.</div>'; return; }
+    tl.innerHTML = [...scans].reverse().map(s => {
+      const col = riskColors[s.risk_key] || '#8fa3be';
+      const alertTag = s.risk_increased
+        ? `<span class="tl-alert">▲ Risk Increased</span>`
+        : s.risk_decreased
+        ? `<span class="tl-alert tl-improve">▼ Improved</span>`
+        : '';
+      const habits = [
+        {label:'🚬 Smoking', val:s.smoking},
+        {label:'🌿 Chewing', val:s.chewing},
+        {label:'🥜 Areca',   val:s.arecanut},
+        {label:'🍺 Alcohol', val:s.alcohol}
+      ].filter(h => h.val);
+      return `
+        <div class="tl-item">
+          <div class="tl-dot" style="background:${col}22;border-color:${col}">${riskEmoji[s.risk_key]}</div>
+          <div class="tl-body">
+            <div class="tl-date">${s.scan_date || s.created_at.slice(0,10)} · ${s.doctor || 'Unknown Doctor'}</div>
+            <div><span class="tl-class" style="color:${col}">${s.multi_class}</span>${alertTag}</div>
+            <div class="tl-conf">${s.multi_confidence}% ± ${s.multi_uncertainty}% · ${s.multi_uncertainty_label} uncertainty</div>
+            ${habits.length
+              ? `<div class="tl-habits">${habits.map(h=>`<span class="tl-chip on">${h.label}</span>`).join('')}</div>`
+              : `<div class="tl-habits"><span class="tl-chip off">✓ No active habits</span></div>`}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderHabitTracker(scans) {
+    const ht = document.getElementById('habitTimeline');
+    const habits = [
+      {label:'🚬 Smoking',   key:'smoking'},
+      {label:'🌿 Chewing',   key:'chewing'},
+      {label:'🥜 Areca Nut', key:'arecanut'},
+      {label:'🍺 Alcohol',   key:'alcohol'}
+    ];
+    ht.innerHTML = habits.map(h => `
+      <div class="habit-row">
+        <div class="habit-name">${h.label}</div>
+        <div class="habit-dots">
+          ${scans.map(s => `
+            <div class="habit-dot-item">
+              <div class="habit-dot-circle ${s[h.key] ? 'on' : 'off'}">${s[h.key] ? '✓' : '✗'}</div>
+              <div class="habit-dot-date">${(s.scan_date || s.created_at.slice(0,10)).slice(5)}</div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function renderGradcamGrid(scans) {
+    const grid = document.getElementById('gradcamGrid');
+    const withGradcam = scans.filter(s => s.gradcam);
+    if (!withGradcam.length) { grid.innerHTML = '<div class="no-data">No Grad-CAM images stored yet.</div>'; return; }
+    grid.innerHTML = withGradcam.map(s => `
+      <div class="gradcam-item">
+        <img class="gradcam-img" src="data:image/jpeg;base64,${s.gradcam}" alt="Grad-CAM">
+        <div class="gradcam-label">
+          <div class="gradcam-date">${s.scan_date || s.created_at.slice(0,10)}</div>
+          <div class="gradcam-class" style="color:${riskColors[s.risk_key]||'#8fa3be'}">${s.multi_class}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  loadPatients();
+</script>
+</body>
+</html>

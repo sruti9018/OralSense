@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OralSense — Multimodal Oral Cancer Risk Stratification</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #0a2463;
+    --blue-mid:  #1e5fa8;
+    --blue-light:#3a86d4;
+    --blue-pale: #ddeeff;
+    --blue-bg:   #f0f6ff;
+    --white:     #ffffff;
+    --gray-50:   #f8fafc;
+    --gray-100:  #eef2f7;
+    --gray-200:  #d8e2ef;
+    --gray-400:  #8fa3be;
+    --gray-600:  #4a6080;
+    --gray-700:  #334d6e;
+    --gray-800:  #1e3050;
+    --green:     #0d9e6e;
+    --amber:     #d97706;
+    --orange:    #ea6a1a;
+    --red:       #c0392b;
+    --red-light: #fef2f2;
+    --shadow-sm: 0 1px 3px rgba(10,36,99,0.08);
+    --shadow-md: 0 4px 16px rgba(10,36,99,0.10);
+    --radius:    10px;
+    --radius-lg: 16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--blue-bg); color: var(--gray-800); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue-deep));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(30,95,168,0.30);
+  }
+  .logo-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--blue-deep); letter-spacing: -0.3px; line-height: 1; }
+  .logo-sub  { font-size: 10px; color: var(--gray-400); letter-spacing: 0.8px; text-transform: uppercase; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .badge-dataset { background: var(--blue-pale); color: var(--blue-mid); border: 1px solid #b8d4f0; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-live { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--green); font-weight: 500; }
+  .live-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+  .history-nav-btn { padding: 7px 16px; background: var(--blue-pale); color: var(--blue-mid); border: 1px solid #b8d4f0; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+  .history-nav-btn:hover { background: var(--blue-mid); color: white; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+  /* ── TABS ── */
+  .tabs-bar { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 0 40px; display: flex; }
+  .tab-btn {
+    padding: 14px 24px; font-size: 13px; font-weight: 500; color: var(--gray-400);
+    border: none; background: none; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s; letter-spacing: 0.2px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab-btn:hover { color: var(--blue-mid); }
+  .tab-btn.active { color: var(--blue-mid); border-bottom-color: var(--blue-mid); font-weight: 600; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── MAIN ── */
+  main { max-width: 1280px; margin: 0 auto; padding: 32px 40px; }
+  .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  /* ── CARD ── */
+  .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 20px; }
+  .card:last-child { margin-bottom: 0; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; gap: 8px; }
+  .card-header-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--blue-pale); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.9px; }
+  .card-body { padding: 20px; }
+
+  /* ── UPLOAD ── */
+  .upload-zone {
+    border: 2px dashed var(--gray-200); border-radius: var(--radius);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--gray-50); position: relative;
+  }
+  .upload-zone:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 34px; margin-bottom: 8px; }
+  .upload-label { font-size: 14px; font-weight: 500; color: var(--blue-mid); margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: var(--gray-400); }
+  #preview-wrap { display: none; margin-top: 12px; }
+  #preview-wrap img { width: 100%; border-radius: var(--radius); max-height: 200px; object-fit: cover; border: 1px solid var(--gray-200); }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.6px; }
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    padding: 9px 12px; border: 1px solid var(--gray-200);
+    border-radius: 7px; background: var(--gray-50); color: var(--gray-800);
+    outline: none; transition: border 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue-light); background: var(--white); box-shadow: 0 0 0 3px rgba(58,134,212,0.10); }
+  select option { background: var(--white); }
+  textarea { resize: none; height: 62px; }
+  .section-label { font-size: 11px; font-weight: 700; color: var(--blue-mid); text-transform: uppercase; letter-spacing: 0.8px; margin: 14px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--gray-100); }
+
+  /* ── HABITS ── */
+  .habits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .toggle-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 7px; cursor: pointer; transition: all 0.15s; font-size: 13px; color: var(--gray-600); user-select: none; }
+  .toggle-item:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+  .toggle-item input { display: none; }
+  .toggle-dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--gray-400); flex-shrink: 0; transition: all 0.15s; }
+  .toggle-item input:checked ~ .toggle-dot { background: var(--blue-mid); border-color: var(--blue-mid); }
+  .toggle-item input:checked ~ span { color: var(--blue-deep); font-weight: 500; }
+
+  /* ── BUTTON ── */
+  .predict-btn {
+    width: 100%; margin-top: 16px; padding: 13px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue-deep));
+    color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    border: none; border-radius: var(--radius); cursor: pointer;
+    transition: all 0.2s; box-shadow: 0 4px 12px rgba(10,36,99,0.20);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .predict-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(10,36,99,0.28); }
+  .predict-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* ── PREDICTION PANEL ── */
+  .placeholder-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 52px 20px; text-align: center; gap: 10px; }
+  .placeholder-state .big-icon { font-size: 40px; opacity: 0.3; }
+  .placeholder-state p { font-size: 13px; color: var(--gray-400); }
+
+  .result-box { background: var(--gray-50); border-radius: var(--radius); padding: 14px 16px; border-left: 4px solid var(--gray-200); display: none; margin-bottom: 12px; }
+  .result-box.show { display: block; animation: fadeIn 0.4s ease; }
+  .result-label { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .result-class { font-family: 'DM Serif Display', serif; font-size: 20px; margin: 4px 0 2px; }
+  .result-desc { font-size: 12px; color: var(--gray-600); }
+  .risk-badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── UNCERTAINTY ── */
+  .unc-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 10px; border-radius: 7px; background: var(--white); border: 1px solid var(--gray-100); }
+  .unc-label { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+  .unc-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; }
+  .unc-badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .unc-badge.very-low { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .unc-badge.low      { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .unc-badge.moderate { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .unc-badge.high     { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  /* ── CONF BARS ── */
+  .conf-bars { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .conf-row { display: flex; align-items: center; gap: 8px; }
+  .conf-name { font-size: 11px; width: 70px; color: var(--gray-600); font-weight: 500; }
+  .conf-bar-bg { flex: 1; background: var(--gray-200); border-radius: 3px; height: 5px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .conf-pct { font-size: 11px; width: 34px; text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--gray-600); }
+
+  /* ── SAVE STATUS ── */
+  .save-status { display: none; margin-top: 10px; padding: 8px 12px; border-radius: 7px; font-size: 12px; font-weight: 500; align-items: center; gap: 8px; }
+  .save-status.show { display: flex; }
+  .save-status.saved { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .save-status.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  /* ── GRADCAM ── */
+  .gradcam-card { display: none; }
+  .gradcam-card.show { display: block; animation: fadeIn 0.4s ease; }
+  #gradcam-img { width: 100%; border-radius: var(--radius); border: 1px solid var(--gray-200); }
+  .gradcam-legend { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .legend-bar { flex: 1; height: 7px; border-radius: 4px; background: linear-gradient(to right,#00008b,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000); }
+
+  /* ── SPINNER ── */
+  .spinner { display: none; width: 17px; height: 17px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── REPORT TAB ── */
+  .report-shell { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; }
+  .report-placeholder { text-align: center; padding: 80px 40px; color: var(--gray-400); }
+  .report-placeholder .big-icon { font-size: 48px; opacity: 0.3; margin-bottom: 14px; }
+  .report-placeholder p { font-size: 14px; margin-bottom: 4px; }
+  .report-placeholder small { font-size: 12px; }
+
+  .report-head {
+    background: linear-gradient(135deg, var(--blue-deep), var(--blue-mid));
+    padding: 26px 36px; color: white;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .report-head-left { display: flex; align-items: center; gap: 16px; }
+  .report-logo-box { width: 46px; height: 46px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(255,255,255,0.20); }
+  .report-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: white; }
+  .report-subtitle { font-size: 11px; color: rgba(255,255,255,0.60); margin-top: 3px; }
+  .report-id-box { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.80); background: rgba(255,255,255,0.12); padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.20); }
+  .report-date-box { font-size: 11px; color: rgba(255,255,255,0.50); margin-top: 6px; text-align: right; }
+  .mc-runs-badge { font-size: 10px; color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; margin-top: 5px; display: inline-block; }
+
+  .risk-hero { padding: 22px 36px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; gap: 20px; }
+  .risk-hero-indicator { width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+  .risk-hero-class { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1; }
+  .risk-hero-desc { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+  .risk-hero-conf { margin-left: auto; text-align: right; }
+  .conf-big { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 500; color: var(--blue-deep); line-height: 1; }
+  .conf-big-unc { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gray-400); margin-top: 3px; }
+  .conf-big-label { font-size: 10px; color: var(--gray-400); letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px; }
+
+  .report-body { padding: 26px 36px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .rpt-section-title { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .rpt-section-title::after { content:''; flex:1; height:1px; background:var(--gray-100); }
+  .rpt-field { margin-bottom: 9px; }
+  .rpt-field-label { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .rpt-field-value { font-size: 13px; font-weight: 500; color: var(--gray-800); }
+
+  .habit-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+  .chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .chip.active { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .chip.inactive { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+  .model-compare { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { border: 1px solid var(--gray-100); border-radius: var(--radius); padding: 14px 16px; background: var(--gray-50); }
+  .compare-model-name { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; margin-bottom: 6px; }
+  .compare-class { font-size: 16px; font-weight: 700; font-family: 'DM Serif Display', serif; margin-bottom: 4px; }
+  .compare-unc { font-size: 11px; color: var(--gray-400); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+
+  .rec-box { grid-column: 1 / -1; border-radius: var(--radius); padding: 16px 20px; border-left: 4px solid; }
+  .rec-box.normal  { background: #f0fdf4; border-color: var(--green); }
+  .rec-box.low     { background: #fffbeb; border-color: var(--amber); }
+  .rec-box.medium  { background: #fff7ed; border-color: var(--orange); }
+  .rec-box.high    { background: var(--red-light); border-color: var(--red); }
+  .rec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .rec-title.normal  { color: var(--green); }
+  .rec-title.low     { color: var(--amber); }
+  .rec-title.medium  { color: var(--orange); }
+  .rec-title.high    { color: var(--red); }
+  .rec-text { font-size: 13px; color: var(--gray-700); line-height: 1.6; }
+
+  #rpt-gradcam-wrap { grid-column: 1 / -1; display: none; }
+  #rpt-gradcam { width: 260px; border-radius: var(--radius); border: 1px solid var(--gray-200); margin-top: 6px; }
+  .notes-section { grid-column: 1 / -1; }
+
+  .report-footer { padding: 14px 36px; border-top: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; background: var(--gray-50); flex-wrap: wrap; gap: 10px; }
+  .report-footer-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .report-footer-note { font-size: 11px; color: var(--gray-400); font-style: italic; }
+  .btn-print { padding: 9px 20px; background: var(--blue-mid); color: white; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; border: none; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; text-decoration: none; }
+  .btn-print:hover { background: var(--blue-deep); }
+  .btn-history { padding: 9px 20px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; border-radius: 7px; cursor: pointer; display: none; align-items: center; gap: 6px; transition: all 0.2s; text-decoration: none; }
+  .btn-history.show { display: flex; }
+  .btn-history:hover { background: #166534; color: white; }
+
+  @media print {
+    header, .tabs-bar, .btn-print, .btn-history { display: none !important; }
+    body { background: white; }
+    main { padding: 0; }
+    .report-shell { box-shadow: none; border: none; }
+    #tab-analysis { display: none !important; }
+    #tab-report { display: block !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🦷</div>
+    <div>
+      <div class="logo-name">OralSense</div>
+      <div class="logo-sub">Clinical Decision Support</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge-dataset">SMART-OM · 2,469 Images</span>
+    <a href="http://127.0.0.1:5000/history" target="_blank" class="history-nav-btn">📋 Patient History</a>
+    <span class="badge-live"><span class="live-dot"></span>System Online</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('analysis', this)">🔬 Analysis</button>
+  <button class="tab-btn" onclick="switchTab('report', this)">📋 Patient Report</button>
+</div>
+
+<main>
+
+  <!-- ── ANALYSIS TAB ── -->
+  <div class="tab-content active" id="tab-analysis">
+    <div class="analysis-grid">
+
+      <!-- LEFT -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-icon">🖼</div>
+            <span class="card-title">Oral Image Upload</span>
+          </div>
+          <div class="card-body">
+            <div class="upload-zone">
+              <input type="file" id="imageInput" accept="image/*">
+              <div class="upload-icon">📷</div>
+              <div class="upload-label">Drop image or click to browse</div>
+              <div class="upload-hint">JPG, PNG — smartphone or clinical photographs</div>
+            </div>
+            <div id="preview-wrap"><img id="preview-img" src="" alt="Preview"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-icon">👤</div>
+            <span class="card-title">Patient Information</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field"><label>Full Name</label><input type="text" id="p-name" placeholder="e.g. Ravi Kumar"></div>
+              <div class="field"><label>Patient ID</label><input type="text" id="p-id" placeholder="e.g. PT-001"></div>
+              <div class="field"><label>Age (years)</label><input type="number" id="age" placeholder="e.g. 45" min="1" max="120"></div>
+              <div class="field"><label>Sex</label>
+                <select id="sex">
+                  <option value="0.5">— Select —</option>
+                  <option value="1">Male</option>
+                  <option value="0">Female</option>
+                </select>
+              </div>
+              <div class="field"><label>Phone</label><input type="text" id="p-phone" placeholder="e.g. 9876543210"></div>
+              <div class="field"><label>Date</label><input type="date" id="p-date"></div>
+              <div class="field full"><label>Location / Address</label><input type="text" id="p-address" placeholder="City, District, State"></div>
+              <div class="field full"><label>Examining Doctor</label><input type="text" id="p-doctor" placeholder="Dr. Name"></div>
+              <div class="field full"><label>Department</label><input type="text" id="p-dept" placeholder="e.g. Oral Medicine & Radiology"></div>
+              <div class="field full"><label>Clinical Notes</label><textarea id="p-notes" placeholder="Chief complaint, clinical observations…"></textarea></div>
+            </div>
+
+            <div class="section-label">⚠️ Behavioral Risk Factors</div>
+            <div class="habits-grid">
+              <label class="toggle-item"><input type="checkbox" id="smoking"><div class="toggle-dot"></div><span>🚬 Smoking</span></label>
+              <label class="toggle-item"><input type="checkbox" id="chewing"><div class="toggle-dot"></div><span>🌿 Tobacco Chewing</span></label>
+              <label class="toggle-item"><input type="checkbox" id="arecanut"><div class="toggle-dot"></div><span>🥜 Areca Nut</span></label>
+              <label class="toggle-item"><input type="checkbox" id="alcohol"><div class="toggle-dot"></div><span>🍺 Alcohol</span></label>
+            </div>
+
+            <button class="predict-btn" id="predictBtn" onclick="predict()">
+              <span id="btn-text">🔬 Run Oral Cancer Screening</span>
+              <div class="spinner" id="spinner"></div>
+            </button>
+
+            <!-- Save status -->
+            <div class="save-status" id="saveStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-icon">🤖</div>
+            <span class="card-title">Prediction · Monte Carlo Dropout (20 runs)</span>
+          </div>
+          <div class="card-body">
+            <div class="placeholder-state" id="placeholder">
+              <div class="big-icon">🔬</div>
+              <p>Upload an image and run screening to see predictions</p>
+            </div>
+
+            <div class="result-box" id="img-result">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="result-label">Image Model (MobileNetV2)</div>
+                  <div class="result-class" id="img-class">—</div>
+                  <div class="result-desc" id="img-desc">—</div>
+                </div>
+                <div class="risk-badge" id="img-risk">—</div>
+              </div>
+              <div class="unc-row">
+                <span class="unc-label">Uncertainty</span>
+                <span class="unc-value" id="img-unc-val">—</span>
+                <span class="unc-badge" id="img-unc-badge">—</span>
+              </div>
+              <div class="conf-bars" id="img-bars"></div>
+            </div>
+
+            <div class="result-box" id="multi-result">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="result-label">Multimodal Model (Image + Metadata)</div>
+                  <div class="result-class" id="multi-class">—</div>
+                  <div class="result-desc" id="multi-desc">—</div>
+                </div>
+                <div class="risk-badge" id="multi-risk">—</div>
+              </div>
+              <div class="unc-row">
+                <span class="unc-label">Uncertainty</span>
+                <span class="unc-value" id="multi-unc-val">—</span>
+                <span class="unc-badge" id="multi-unc-badge">—</span>
+              </div>
+              <div class="conf-bars" id="multi-bars"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card gradcam-card" id="gradcam-card">
+          <div class="card-header">
+            <div class="card-header-icon">🔥</div>
+            <span class="card-title">Grad-CAM Explainability</span>
+          </div>
+          <div class="card-body">
+            <img id="gradcam-img" src="" alt="Grad-CAM Heatmap">
+            <div class="gradcam-legend">
+              <span style="font-size:10px;color:var(--gray-400)">Low</span>
+              <div class="legend-bar"></div>
+              <span style="font-size:10px;color:var(--gray-400)">High</span>
+              <span style="margin-left:8px;font-size:10px;color:var(--gray-400)">AI attention regions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── REPORT TAB ── -->
+  <div class="tab-content" id="tab-report">
+
+    <div class="report-placeholder" id="no-report">
+      <div class="big-icon">📋</div>
+      <p>No report generated yet.</p>
+      <small>Go to Analysis → fill patient details → click Run Oral Cancer Screening.</small>
+    </div>
+
+    <div class="report-shell" id="report-section" style="display:none">
+
+      <div class="report-head">
+        <div class="report-head-left">
+          <div class="report-logo-box">🦷</div>
+          <div>
+            <div class="report-title">OralSense — Patient Report</div>
+            <div class="report-subtitle">Multimodal Oral Cancer Risk Stratification · Clinical Decision Support</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="report-id-box" id="rpt-id">ID: —</div>
+          <div class="report-date-box" id="rpt-subtitle">Report Date: —</div>
+          <div class="mc-runs-badge" id="rpt-mc-badge">MC Dropout: 20 runs</div>
+        </div>
+      </div>
+
+      <div class="risk-hero">
+        <div class="risk-hero-indicator" id="rpt-hero-icon">❓</div>
+        <div>
+          <div class="risk-hero-class" id="rpt-class">—</div>
+          <div class="risk-hero-desc" id="rpt-desc">—</div>
+        </div>
+        <div class="risk-hero-conf">
+          <div class="conf-big" id="rpt-conf">—</div>
+          <div class="conf-big-unc" id="rpt-conf-unc">± —%</div>
+          <div class="conf-big-label">Confidence ± Uncertainty (Multimodal)</div>
+        </div>
+      </div>
+
+      <div class="report-body">
+
+        <div>
+          <div class="rpt-section-title">👤 Patient Details</div>
+          <div class="rpt-field"><div class="rpt-field-label">Name</div><div class="rpt-field-value" id="rpt-name">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Patient ID</div><div class="rpt-field-value" id="rpt-pid">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Age</div><div class="rpt-field-value" id="rpt-age">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Sex</div><div class="rpt-field-value" id="rpt-sex">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Phone</div><div class="rpt-field-value" id="rpt-phone">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Location</div><div class="rpt-field-value" id="rpt-address">—</div></div>
+        </div>
+
+        <div>
+          <div class="rpt-section-title">🩺 Examination</div>
+          <div class="rpt-field"><div class="rpt-field-label">Date</div><div class="rpt-field-value" id="rpt-date">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Examiner</div><div class="rpt-field-value" id="rpt-doctor">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Department</div><div class="rpt-field-value" id="rpt-dept">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Image Model</div><div class="rpt-field-value" id="rpt-img-class">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Img Confidence</div><div class="rpt-field-value" id="rpt-img-conf">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Img Uncertainty</div><div class="rpt-field-value" id="rpt-img-unc">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Multimodal</div><div class="rpt-field-value" id="rpt-multi-class">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Multi Confidence</div><div class="rpt-field-value" id="rpt-multi-conf">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Multi Uncertainty</div><div class="rpt-field-value" id="rpt-multi-unc">—</div></div>
+        </div>
+
+        <div>
+          <div class="rpt-section-title">⚠️ Risk Factors</div>
+          <div class="rpt-field"><div class="rpt-field-label">Smoking</div><div class="rpt-field-value" id="rpt-smoking">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Chewing</div><div class="rpt-field-value" id="rpt-chewing">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Areca Nut</div><div class="rpt-field-value" id="rpt-arecanut">—</div></div>
+          <div class="rpt-field"><div class="rpt-field-label">Alcohol</div><div class="rpt-field-value" id="rpt-alcohol">—</div></div>
+          <div class="rpt-field" style="margin-top:10px">
+            <div class="rpt-field-label">Active Habits</div>
+            <div class="habit-chips" id="rpt-chips"></div>
+          </div>
+        </div>
+
+        <div class="model-compare">
+          <div style="grid-column:1/-1"><div class="rpt-section-title">🤖 Model Comparison (MC Dropout)</div></div>
+          <div class="compare-card">
+            <div class="compare-model-name">Image-Only Model (MobileNetV2)</div>
+            <div class="compare-class" id="rpt-cmp-img">—</div>
+            <div class="compare-unc" id="rpt-cmp-img-unc">Uncertainty: —</div>
+            <div class="conf-bars" id="rpt-cmp-img-bars"></div>
+          </div>
+          <div class="compare-card">
+            <div class="compare-model-name">Multimodal Model (Image + Metadata)</div>
+            <div class="compare-class" id="rpt-cmp-multi">—</div>
+            <div class="compare-unc" id="rpt-cmp-multi-unc">Uncertainty: —</div>
+            <div class="conf-bars" id="rpt-cmp-multi-bars"></div>
+          </div>
+        </div>
+
+        <div id="rpt-gradcam-wrap">
+          <div class="rpt-section-title">🔥 Grad-CAM Heatmap</div>
+          <img id="rpt-gradcam" src="" alt="Grad-CAM">
+          <div class="gradcam-legend" style="width:260px;margin-top:6px">
+            <span style="font-size:10px;color:var(--gray-400)">Low</span>
+            <div class="legend-bar"></div>
+            <span style="font-size:10px;color:var(--gray-400)">High</span>
+          </div>
+        </div>
+
+        <div class="notes-section">
+          <div class="rpt-section-title">📝 Clinical Notes</div>
+          <p id="rpt-notes" style="font-size:13px;color:var(--gray-600);line-height:1.6;font-style:italic">—</p>
+        </div>
+
+        <div class="rec-box" id="rec-box" style="grid-column:1/-1">
+          <div class="rec-title" id="rec-title">Clinical Recommendation</div>
+          <div class="rec-text" id="rec-text">—</div>
+        </div>
+
+      </div>
+
+      <div class="report-footer">
+        <div class="report-footer-left">
+          <div class="report-footer-note">⚠️ AI-assisted screening only. Final diagnosis must be confirmed by a licensed medical professional.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <a class="btn-history" id="btn-history" href="#" target="_blank">📋 View Full History →</a>
+          <button class="btn-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const API = 'http://127.0.0.1:5000';
+  document.getElementById('p-date').valueAsDate = new Date();
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  document.getElementById('imageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('preview-img').src = ev.target.result;
+      document.getElementById('preview-wrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function colorForClass(cls) {
+    return { Normal:'#0d9e6e', Variations:'#d97706', OPMD:'#ea6a1a', OC:'#c0392b' }[cls] || '#8fa3be';
+  }
+
+  function riskKey(cls) {
+    return { Normal:'normal', Variations:'low', OPMD:'medium', OC:'high' }[cls] || 'normal';
+  }
+
+  const riskEmoji = { normal:'✅', low:'⚠️', medium:'🔶', high:'🔴' };
+  const riskText  = { normal:'LOW RISK', low:'LOW–MED RISK', medium:'MEDIUM RISK', high:'HIGH RISK' };
+
+  function uncClass(label) {
+    return { 'Very Low':'very-low', 'Low':'low', 'Moderate':'moderate', 'High':'high' }[label] || 'low';
+  }
+
+  function renderBars(id, probs, mainClass) {
+    const c = document.getElementById(id);
+    c.innerHTML = '';
+    ['Normal','Variations','OPMD','OC'].forEach(cls => {
+      const pct = probs[cls] || 0;
+      const col = colorForClass(cls);
+      c.innerHTML += `
+        <div class="conf-row">
+          <div class="conf-name">${cls}</div>
+          <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+          <div class="conf-pct" style="color:${cls===mainClass?col:'var(--gray-400)'}">${pct}%</div>
+        </div>`;
+    });
+  }
+
+  function showResultBox(boxId, riskId, classId, descId, barsId, uncValId, uncBadgeId, data) {
+    const box = document.getElementById(boxId);
+    const col = colorForClass(data.class);
+    const rk  = riskKey(data.class);
+    box.style.borderLeftColor = col;
+    box.classList.add('show');
+    const cls = document.getElementById(classId);
+    cls.textContent = data.class;
+    cls.style.color = col;
+    document.getElementById(descId).textContent = data.desc;
+    const rb = document.getElementById(riskId);
+    rb.textContent = riskText[rk];
+    rb.style.background = col + '22';
+    rb.style.color = col;
+    rb.style.border = `1px solid ${col}55`;
+    const unc = data.uncertainty || 0;
+    const uncLabel = data.uncertainty_label || 'Low';
+    document.getElementById(uncValId).textContent = `${data.confidence}% ± ${unc}%`;
+    document.getElementById(uncValId).style.color = col;
+    const badge = document.getElementById(uncBadgeId);
+    badge.textContent = uncLabel;
+    badge.className = 'unc-badge ' + uncClass(uncLabel);
+    renderBars(barsId, data.probs, data.class);
+  }
+
+  const recommendations = {
+    normal: 'No signs of malignancy detected. Maintain good oral hygiene and schedule routine annual check-up. Counsel patient on avoiding tobacco and areca nut.',
+    low:    'Minor variations noted. Schedule follow-up in 3–6 months. Monitor for changes. Advise cessation of tobacco and areca nut habits.',
+    medium: 'Oral Potentially Malignant Disorder (OPMD) detected. Refer to oral medicine specialist within 2–4 weeks. Biopsy may be required. Strict habit cessation counselling recommended.',
+    high:   'CRITICAL: Oral Cancer indicators detected. Immediate referral to oncologist required. Urgent biopsy, staging, and multidisciplinary team consultation needed. Do not delay treatment.'
+  };
+
+  function generateReport(imgData, multiData, gradcam, mcRuns, pid) {
+    const name    = document.getElementById('p-name').value    || '—';
+    const age     = document.getElementById('age').value       || '—';
+    const sexVal  = document.getElementById('sex').value;
+    const sex     = sexVal==='1'?'Male': sexVal==='0'?'Female':'—';
+    const phone   = document.getElementById('p-phone').value   || '—';
+    const address = document.getElementById('p-address').value || '—';
+    const doctor  = document.getElementById('p-doctor').value  || '—';
+    const dept    = document.getElementById('p-dept').value    || '—';
+    const notes   = document.getElementById('p-notes').value   || 'No additional notes.';
+    const dateVal = document.getElementById('p-date').value;
+    const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : new Date().toLocaleDateString();
+    const smoking  = document.getElementById('smoking').checked;
+    const chewing  = document.getElementById('chewing').checked;
+    const arecanut = document.getElementById('arecanut').checked;
+    const alcohol  = document.getElementById('alcohol').checked;
+
+    const col = colorForClass(multiData.class);
+    const rk  = riskKey(multiData.class);
+
+    const hi = document.getElementById('rpt-hero-icon');
+    hi.textContent = riskEmoji[rk];
+    hi.style.background = col + '22';
+    const hc = document.getElementById('rpt-class');
+    hc.textContent = multiData.class;
+    hc.style.color = col;
+    document.getElementById('rpt-desc').textContent = multiData.desc;
+    const confBig = document.getElementById('rpt-conf');
+    confBig.textContent = multiData.confidence + '%';
+    confBig.style.color = col;
+    document.getElementById('rpt-conf-unc').textContent = `± ${multiData.uncertainty || 0}%  (${multiData.uncertainty_label || '—'})`;
+
+    document.getElementById('rpt-id').textContent       = 'ID: ' + pid;
+    document.getElementById('rpt-subtitle').textContent = 'Report Date: ' + dateStr;
+    document.getElementById('rpt-mc-badge').textContent = `MC Dropout: ${mcRuns || 20} runs`;
+
+    document.getElementById('rpt-name').textContent    = name;
+    document.getElementById('rpt-pid').textContent     = pid;
+    document.getElementById('rpt-age').textContent     = age !== '—' ? age + ' years' : '—';
+    document.getElementById('rpt-sex').textContent     = sex;
+    document.getElementById('rpt-phone').textContent   = phone;
+    document.getElementById('rpt-address').textContent = address;
+
+    document.getElementById('rpt-date').textContent   = dateStr;
+    document.getElementById('rpt-doctor').textContent = doctor;
+    document.getElementById('rpt-dept').textContent   = dept;
+
+    const ic = colorForClass(imgData.class);
+    const imgEl = document.getElementById('rpt-img-class');
+    imgEl.textContent = imgData.class; imgEl.style.color = ic; imgEl.style.fontWeight = '600';
+    document.getElementById('rpt-img-conf').textContent = imgData.confidence + '%';
+    document.getElementById('rpt-img-unc').textContent  = `± ${imgData.uncertainty || 0}% (${imgData.uncertainty_label || '—'})`;
+
+    const mulEl = document.getElementById('rpt-multi-class');
+    mulEl.textContent = multiData.class; mulEl.style.color = col; mulEl.style.fontWeight = '600';
+    document.getElementById('rpt-multi-conf').textContent = multiData.confidence + '%';
+    document.getElementById('rpt-multi-unc').textContent  = `± ${multiData.uncertainty || 0}% (${multiData.uncertainty_label || '—'})`;
+
+    const yn = v => v ? '<span style="color:#c0392b;font-weight:600">Yes ⚠</span>' : '<span style="color:#0d9e6e">No ✓</span>';
+    document.getElementById('rpt-smoking').innerHTML  = yn(smoking);
+    document.getElementById('rpt-chewing').innerHTML  = yn(chewing);
+    document.getElementById('rpt-arecanut').innerHTML = yn(arecanut);
+    document.getElementById('rpt-alcohol').innerHTML  = yn(alcohol);
+
+    const chips = document.getElementById('rpt-chips');
+    chips.innerHTML = '';
+    [{label:'🚬 Smoking',val:smoking},{label:'🌿 Chewing',val:chewing},{label:'🥜 Areca Nut',val:arecanut},{label:'🍺 Alcohol',val:alcohol}]
+      .forEach(h => { chips.innerHTML += `<span class="chip ${h.val?'active':'inactive'}">${h.label}</span>`; });
+
+    const cmpImg = document.getElementById('rpt-cmp-img');
+    cmpImg.textContent = imgData.class; cmpImg.style.color = colorForClass(imgData.class);
+    document.getElementById('rpt-cmp-img-unc').textContent  = `Uncertainty: ± ${imgData.uncertainty || 0}% — ${imgData.uncertainty_label || '—'}`;
+    const cmpMulti = document.getElementById('rpt-cmp-multi');
+    cmpMulti.textContent = multiData.class; cmpMulti.style.color = col;
+    document.getElementById('rpt-cmp-multi-unc').textContent = `Uncertainty: ± ${multiData.uncertainty || 0}% — ${multiData.uncertainty_label || '—'}`;
+    renderBars('rpt-cmp-img-bars',   imgData.probs,   imgData.class);
+    renderBars('rpt-cmp-multi-bars', multiData.probs, multiData.class);
+
+    if (gradcam) {
+      document.getElementById('rpt-gradcam').src = 'data:image/jpeg;base64,' + gradcam;
+      document.getElementById('rpt-gradcam-wrap').style.display = 'block';
+    }
+
+    document.getElementById('rpt-notes').textContent = notes;
+
+    const recBox = document.getElementById('rec-box');
+    recBox.className = 'rec-box ' + rk;
+    document.getElementById('rec-title').className = 'rec-title ' + rk;
+    document.getElementById('rec-text').textContent = recommendations[rk];
+
+    // History button
+    const histBtn = document.getElementById('btn-history');
+    histBtn.href = `http://127.0.0.1:5000/history?pid=${pid}`;
+    histBtn.classList.add('show');
+
+    document.getElementById('no-report').style.display      = 'none';
+    document.getElementById('report-section').style.display = 'block';
+  }
+
+  async function predict() {
+    const fileInput = document.getElementById('imageInput');
+    if (!fileInput.files[0]) { alert('Please upload an oral cavity image first!'); return; }
+
+    const btn     = document.getElementById('predictBtn');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('spinner');
+    const saveStatus = document.getElementById('saveStatus');
+
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    spinner.style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+    saveStatus.className = 'save-status';
+
+    const fd = new FormData();
+    fd.append('image',    fileInput.files[0]);
+    fd.append('age',      document.getElementById('age').value || 40);
+    fd.append('sex',      document.getElementById('sex').value);
+    fd.append('smoking',  document.getElementById('smoking').checked  ? 1 : 0);
+    fd.append('chewing',  document.getElementById('chewing').checked  ? 1 : 0);
+    fd.append('arecanut', document.getElementById('arecanut').checked ? 1 : 0);
+    fd.append('alcohol',  document.getElementById('alcohol').checked  ? 1 : 0);
+
+    try {
+      const res  = await fetch(`${API}/predict`, { method:'POST', body:fd });
+      const data = await res.json();
+      if (data.error) { alert('Error: ' + data.error); return; }
+
+      showResultBox('img-result',   'img-risk',   'img-class',   'img-desc',   'img-bars',   'img-unc-val',   'img-unc-badge',   data.image_only);
+      showResultBox('multi-result', 'multi-risk', 'multi-class', 'multi-desc', 'multi-bars', 'multi-unc-val', 'multi-unc-badge', data.multimodal);
+
+      if (data.gradcam) {
+        document.getElementById('gradcam-img').src = 'data:image/jpeg;base64,' + data.gradcam;
+        document.getElementById('gradcam-card').classList.add('show');
+      }
+
+      // ── Resolve Patient ID ──────────────────────────
+      const pid = document.getElementById('p-id').value.trim() || 'PT-' + Date.now().toString().slice(-4);
+      document.getElementById('p-id').value = pid;
+
+      generateReport(data.image_only, data.multimodal, data.gradcam, data.mc_runs, pid);
+
+      // ── Save scan to database ───────────────────────
+      const savePayload = {
+        patient_id:     pid,
+        name:           document.getElementById('p-name').value,
+        age:            document.getElementById('age').value,
+        sex:            document.getElementById('sex').value === '1' ? 'Male' : document.getElementById('sex').value === '0' ? 'Female' : '—',
+        phone:          document.getElementById('p-phone').value,
+        address:        document.getElementById('p-address').value,
+        scan_date:      document.getElementById('p-date').value,
+        doctor:         document.getElementById('p-doctor').value,
+        department:     document.getElementById('p-dept').value,
+        clinical_notes: document.getElementById('p-notes').value,
+        smoking:        document.getElementById('smoking').checked  ? 1 : 0,
+        chewing:        document.getElementById('chewing').checked  ? 1 : 0,
+        arecanut:       document.getElementById('arecanut').checked ? 1 : 0,
+        alcohol:        document.getElementById('alcohol').checked  ? 1 : 0,
+        image_only:     data.image_only,
+        multimodal:     data.multimodal,
+        gradcam:        data.gradcam
+      };
+
+      try {
+        const saveRes  = await fetch(`${API}/save_scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(savePayload)
+        });
+        const saveData = await saveRes.json();
+
+        if (saveData.success) {
+          saveStatus.className = 'save-status show saved';
+          saveStatus.innerHTML = '✅ Scan saved to patient history';
+
+          if (saveData.risk_increased) {
+            setTimeout(() => {
+              alert('⚠️ ALERT: Risk level has INCREASED since this patient\'s last visit!\n\nPlease review the patient history immediately.');
+            }, 900);
+          }
+        } else {
+          saveStatus.className = 'save-status show error';
+          saveStatus.innerHTML = '⚠️ Could not save to database: ' + (saveData.error || 'Unknown error');
+        }
+      } catch {
+        saveStatus.className = 'save-status show error';
+        saveStatus.innerHTML = '⚠️ Database save failed — check app.py is running';
+      }
+
+      setTimeout(() => {
+        document.querySelectorAll('.tab-btn')[1].click();
+      }, 800);
+
+    } catch(err) {
+      alert('Cannot connect to AI server. Make sure app.py is running on port 5000.');
+    } finally {
+      btn.disabled = false;
+      btnText.style.display = 'block';
+      spinner.style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>
