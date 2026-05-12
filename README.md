@@ -19,47 +19,48 @@ Risk classes:
 
 <img width="1360" height="1640" alt="image" src="https://github.com/user-attachments/assets/1cb71809-7a87-47c5-9b94-cd512f8e288e" />
 
-🗂️ Project Structure
+
+<details>
+<summary><b>📁 Project structure</b></summary>
+<pre>
 oral_cancer_ai/
+│
 ├── app.py                    # Flask backend API
 ├── database.py               # SQLite patient database
 ├── index.html                # OralSense web app frontend
-├── patient_history.html      # Patient history dashboard
+├── patient_history.html      # History dashboard
+│
 ├── data/
-│   ├── augmented/            # Augmented training dataset
+│   ├── augmented/
 │   │   ├── Normal/           # 2,145 images
-│   │   ├── OC/               # 500 images (augmented from 20)
-│   │   ├── OPMD/             # 500 images (augmented from 125)
-│   │   └── Variations/       # 500 images (augmented from 179)
-│   ├── metadata_clean.csv    # Cleaned behavioral metadata
+│   │   ├── OC/               # 500 images (aug. from 20)
+│   │   ├── OPMD/             # 500 images (aug. from 125)
+│   │   └── Variations/       # 500 images (aug. from 179)
+│   ├── metadata_clean.csv
 │   ├── train.csv
 │   ├── val.csv
 │   └── test.csv
+│
 ├── models/
-│   ├── best_model.h5         # Image-only MobileNetV2 model
-│   └── multimodal_model.h5   # Multimodal fusion model
+│   ├── best_model.h5         # Image-only model · 90.3% acc
+│   └── multimodal_model.h5   # Multimodal model · 93.1% acc
+│
 ├── notebooks/
-│   ├── check_dataset.py
-│   ├── explore_dataset.py
-│   ├── prepare_dataset.py
 │   ├── augment_dataset.py
 │   ├── train_model.py
 │   ├── evaluate_model.py
 │   ├── gradcam.py
-│   ├── explore_metadata.py
-│   ├── prepare_multimodal.py
 │   ├── train_multimodal.py
-│   ├── evaluate_multimodal.py
 │   ├── retrain_multimodal.py
 │   └── generate_report.py
+│
 └── results/
-    ├── sample_images.png
-    ├── training_curves.png
     ├── confusion_matrix.png
     ├── gradcam_results.png
-    ├── multimodal_training.png
     ├── multimodal_confusion_matrix.png
     └── project_report.pdf
+</pre>
+</details>
 
 📦 Dataset
 Primary — SMART-OM
