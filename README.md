@@ -4,11 +4,6 @@ Multimodal Oral Cancer Risk Stratification Using Smartphone Images and Areca Nut
 
 Multimodal Oral Cancer Risk Stratification Using Smartphone Images and Areca Nut–Inclusive Behavioral Metadata: A Cross-Population Explainable AI Study
 
-Show Image
-Show Image
-Show Image
-Show Image
-
 📌 Overview
 OralSense is a deep learning clinical decision support system for early oral cancer risk stratification using smartphone oral cavity images combined with behavioral metadata (areca nut, tobacco, alcohol, age, sex). The system uses two complementary AI models with Monte Carlo Dropout uncertainty estimation and provides explainable predictions through Grad-CAM heatmaps.
 The project addresses a critical healthcare gap in South Asia, where oral cancer rates are among the highest in the world due to widespread areca nut and tobacco use.
@@ -22,6 +17,7 @@ Risk classes:
 🔶 OPMD — Oral Potentially Malignant Disorder
 🔴 OC — Oral Cancer (immediate referral required)
 
+<img width="1360" height="1640" alt="image" src="https://github.com/user-attachments/assets/1cb71809-7a87-47c5-9b94-cd512f8e288e" />
 
 🗂️ Project Structure
 oral_cancer_ai/
