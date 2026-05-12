@@ -84,25 +84,137 @@ Cross-population validation
 🛠️ Tech Stack
 CategoryTechnologyLanguagePython 3.10Deep LearningTensorFlow / KerasPretrained ModelMobileNetV2 (ImageNet)Loss FunctionFocal Loss (γ=2, α=0.25)UncertaintyMonte Carlo Dropout (20 runs)Image ProcessingOpenCV, PillowData HandlingPandas, NumPyVisualizationMatplotlib, SeabornExplainabilityGrad-CAMWeb BackendFlask + Flask-CORSDatabaseSQLiteFrontendHTML5, CSS3, JavaScript
 
-🚀 Setup & Installation
-1. Clone the repository
-bashgit clone https://github.com/yourusername/oralsense-ai.git
-cd oralsense-ai
-2. Create conda environment
-bashconda create -n oralcancer python=3.10
+⚡ Setup & Installation
+
+> Prerequisites: **Python 3.10**, **Anaconda**, **SMART-OM dataset** extracted locally.
+
+---
+
+### Step 1 — Create environment & install packages
+
+```bash
+conda create -n oralcancer python=3.10 -y
 conda activate oralcancer
-3. Install dependencies
-bashpip install tensorflow opencv-python pandas numpy matplotlib seaborn scikit-learn flask flask-cors tqdm openpyxl
-4. Download the dataset
-Go to SMART-OM Figshare and download. Extract to data/ folder.
-5. Run notebooks in order
-bashpython notebooks/check_dataset.py
+pip install tensorflow opencv-python pandas numpy matplotlib seaborn scikit-learn flask flask-cors tqdm openpyxl
+```
+
+---
+
+### Step 2 — Check dataset
+
+```bash
+python notebooks/check_dataset.py
+```
+
+✅ Expected: `Total images found: 2469`
+
+---
+
+### Step 3 — Prepare & augment data
+
+```bash
+python notebooks/prepare_dataset.py
+```
+
+✅ Expected: `train.csv`, `val.csv`, `test.csv` created in `data/`
+
+```bash
 python notebooks/augment_dataset.py
+```
+
+✅ Expected: `data/augmented/` with Normal, OC, OPMD, Variations subfolders
+
+---
+
+### Step 4 — Train image model *(30–45 min)*
+
+```bash
 python notebooks/train_model.py
-python notebooks/train_multimodal.py
-6. Start the web app
-bashpython app.py
-Open Chrome: http://127.0.0.1:5000
+```
+
+✅ Expected: `models/best_model.h5` saved · val accuracy ~90%
+
+---
+
+### Step 5 — Evaluate image model + Grad-CAM
+
+```bash
+python notebooks/evaluate_model.py
+python notebooks/gradcam.py
+```
+
+✅ Expected: `results/confusion_matrix.png` and `results/gradcam_results.png` saved
+
+---
+
+### Step 6 — Prepare metadata
+
+```bash
+python notebooks/explore_metadata.py
+python notebooks/prepare_multimodal.py
+```
+
+✅ Expected: `data/metadata_clean.csv` with 331 patients
+
+---
+
+### Step 7 — Train multimodal model *(30–45 min)*
+
+```bash
+python notebooks/retrain_multimodal.py
+```
+
+✅ Expected: `models/multimodal_model.h5` saved · val accuracy ~93%
+
+---
+
+### Step 8 — Evaluate multimodal model
+
+```bash
+python notebooks/evaluate_multimodal.py
+```
+
+✅ Expected: `results/multimodal_confusion_matrix.png` saved
+
+---
+
+### Step 9 — Generate PDF report
+
+```bash
+python notebooks/generate_report.py
+```
+
+✅ Expected: `results/project_report.pdf` saved
+
+---
+
+### Step 10 — Launch web app
+
+**Terminal 1** — keep this running:
+
+```bash
+python app.py
+```
+
+✅ Expected:
+```
+Models loaded!
+Running on http://127.0.0.1:5000
+```
+
+**Terminal 2** — open the app:
+
+```bash
+start chrome http://127.0.0.1:5000
+```
+
+---
+
+> **Windows only** — if `python` is not recognized, use the full path:
+> ```bash
+> & "C:\Users\YourName\anaconda3\envs\oralcancer\python.exe" notebooks/train_model.py
+> ```
+> Replace `YourName` with your actual Windows username.
 
 🌐 OralSense Web App Features
 
