@@ -20,7 +20,7 @@ Risk classes:
 <img width="1360" height="1640" alt="image" src="https://github.com/user-attachments/assets/1cb71809-7a87-47c5-9b94-cd512f8e288e" />
 
 
-<details>
+
 <summary><b>📁 Project structure</b></summary>
 <pre>
 oral_cancer_ai/
@@ -60,7 +60,7 @@ oral_cancer_ai/
     ├── multimodal_confusion_matrix.png
     └── project_report.pdf
 </pre>
-</details>
+
 
 📦 Dataset
 Primary — SMART-OM
@@ -256,6 +256,9 @@ FeatureTypeDescriptionAgeContinuous (0–1)Patient age normalizedSexBinary0=Fema
 RiskClassRecommended Action✅ LowNormalRoutine follow-up in 12 months⚠️ Low-MediumVariationsFollow-up in 3–6 months🔶 MediumOPMDRefer to specialist within 2–4 weeks🔴 HighOCImmediate oncologist referral
 
 📊 Backend workflow
+## 🔁 Backend Workflow
+
+<pre>
 Browser
   │
   │  POST /predict (image + metadata)
@@ -273,7 +276,6 @@ Flask app.py
   │  JSON response
   ▼
 Browser displays results
-
   │
   │  POST /save_scan (patient + results)
   ▼
@@ -291,7 +293,7 @@ Flask app.py
   │
   ▼
 Browser shows risk trend over time
-
+</pre>
 
 ⚠️ Disclaimer
 This system is for research and screening purposes only. It is not a substitute for clinical diagnosis. All predictions must be reviewed by a qualified medical professional.
