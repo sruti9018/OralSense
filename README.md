@@ -255,15 +255,42 @@ FeatureTypeDescriptionAgeContinuous (0–1)Patient age normalizedSexBinary0=Fema
 ⚕️ Clinical Risk Levels & Recommendations
 RiskClassRecommended Action✅ LowNormalRoutine follow-up in 12 months⚠️ Low-MediumVariationsFollow-up in 3–6 months🔶 MediumOPMDRefer to specialist within 2–4 weeks🔴 HighOCImmediate oncologist referral
 
-📊 Training Details
+📊 Backend workflow
+Browser
+  │
+  │  POST /predict (image + metadata)
+  ▼
+Flask app.py
+  ├── preprocess image → numpy array
+  ├── preprocess metadata → numpy array
+  ├── MC Dropout × 20 → image model → probabilities + uncertainty
+  ├── MC Dropout × 20 → multimodal model → probabilities + uncertainty
+  ├── get_best_class() → check thresholds
+  ├── get_final_class() → pick higher risk
+  ├── get_gradcam() → heatmap as base64
+  └── return JSON
+  │
+  │  JSON response
+  ▼
+Browser displays results
 
-Optimizer: Adam (lr=1e-4)
-Loss: Focal Loss (γ=2.0, α=0.25) — handles class imbalance
-Class Weights: Balanced — OC gets 1.82× weight vs Normal 0.42×
-Augmentation: Flip, rotation, brightness, zoom, shear
-Early Stopping: Patience=10 on val_accuracy
-Uncertainty: Monte Carlo Dropout with 20 inference passes
-Decision Rule: Always use higher risk result between both models
+  │
+  │  POST /save_scan (patient + results)
+  ▼
+Flask app.py
+  ├── INSERT/UPDATE patients table
+  ├── INSERT scans table
+  └── return { success: True }
+  │
+  │  GET /patient_history/PT001
+  ▼
+Flask app.py
+  ├── SELECT * FROM patients WHERE patient_id = PT001
+  ├── SELECT * FROM scans WHERE patient_id = PT001
+  └── return full history as JSON
+  │
+  ▼
+Browser shows risk trend over time
 
 
 ⚠️ Disclaimer
